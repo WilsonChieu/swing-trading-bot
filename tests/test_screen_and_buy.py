@@ -1,7 +1,7 @@
 # tests/test_screen_and_buy.py
 from unittest.mock import MagicMock, patch
 from swingbot.screener import ScreenResult
-from swingbot import screen_and_buy
+import screen_and_buy
 
 
 def make_config():
@@ -11,10 +11,10 @@ def make_config():
     )
 
 
-@patch("swingbot.screen_and_buy.send_webhook")
-@patch("swingbot.screen_and_buy.get_fundamentals")
-@patch("swingbot.screen_and_buy.get_price_history")
-@patch("swingbot.screen_and_buy.score_ticker")
+@patch("screen_and_buy.send_webhook")
+@patch("screen_and_buy.get_fundamentals")
+@patch("screen_and_buy.get_price_history")
+@patch("screen_and_buy.score_ticker")
 def test_run_buys_top_picks_and_records_them(
     mock_score_ticker, mock_get_price_history, mock_get_fundamentals, mock_send_webhook,
 ):
@@ -42,10 +42,10 @@ def test_run_buys_top_picks_and_records_them(
     assert mock_send_webhook.call_count == 2
 
 
-@patch("swingbot.screen_and_buy.send_webhook")
-@patch("swingbot.screen_and_buy.get_fundamentals")
-@patch("swingbot.screen_and_buy.get_price_history")
-@patch("swingbot.screen_and_buy.score_ticker")
+@patch("screen_and_buy.send_webhook")
+@patch("screen_and_buy.get_fundamentals")
+@patch("screen_and_buy.get_price_history")
+@patch("screen_and_buy.score_ticker")
 def test_run_skips_buying_when_no_free_slots(
     mock_score_ticker, mock_get_price_history, mock_get_fundamentals, mock_send_webhook,
 ):
