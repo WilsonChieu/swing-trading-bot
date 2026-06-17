@@ -1,4 +1,5 @@
 import datetime
+import time
 from swingbot.config import load_config
 from swingbot.tickers import load_tickers
 from swingbot.data import get_price_history, get_fundamentals
@@ -10,6 +11,21 @@ from swingbot.discord_notify import send_webhook, build_picks_embed, build_summa
 MAX_OPEN_POSITIONS = 6
 PICKS_PER_WEEK = 3
 CASH_BUFFER = 0.95
+
+
+def _fetch_and_score(ticker, max_attempts=2, delay_seconds=1.0):
+    last_exc = None
+    for attempt in range(max_attempts):
+        try:
+            history = get_price_history(ticker)
+            fundamentals = get_fundamentals(ticker)
+            return score_ticker(ticker, history, fundamentals)
+        except Exception as exc:
+            last_exc = exc
+            if attempt < max_attempts - 1:
+                time.sleep(delay_seconds)
+    print(f"Skipping {ticker} after {max_attempts} attempts: {last_exc}")
+    return None
 
 
 def run(config=None, alpaca=None, db=None, tickers=None):
@@ -24,12 +40,7 @@ def run(config=None, alpaca=None, db=None, tickers=None):
 
     scored = []
     for ticker in tickers:
-        try:
-            history = get_price_history(ticker)
-            fundamentals = get_fundamentals(ticker)
-            result = score_ticker(ticker, history, fundamentals)
-        except Exception:
-            continue
+        result = _fetch_and_score(ticker)
         if result is not None:
             scored.append(result)
 
@@ -58,7 +69,15 @@ def run(config=None, alpaca=None, db=None, tickers=None):
                 "target_price": entry_price * 1.15,
                 "stop_price": entry_price * 0.90,
             }
-            db.insert_active_pick(pick)
+            try:
+                db.insert_active_pick(pick)
+            except Exception as exc:
+                send_webhook(config.discord_webhook_url, build_error_embed(
+                    "screen_and_buy",
+                    f"Bought {candidate.ticker} on Alpaca (qty={pick['qty']}, price={entry_price}) "
+                    f"but failed to record it in Supabase: {exc}. Manual reconciliation needed.",
+                ))
+                continue
             bought.append(pick)
 
     send_webhook(config.discord_webhook_url, build_picks_embed(bought, skipped))

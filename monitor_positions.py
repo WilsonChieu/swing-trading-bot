@@ -40,17 +40,18 @@ def run(config=None, alpaca=None, db=None):
             continue
 
         order = alpaca.submit_market_sell(pick["ticker"], position["qty"])
+        realized_pnl_pct = (order["filled_avg_price"] - pick["entry_price"]) / pick["entry_price"]
         db.close_position(pick["id"], {
             "exit_date": today.isoformat(),
             "exit_price": order["filled_avg_price"],
-            "realized_pnl_pct": position["unrealized_plpc"],
+            "realized_pnl_pct": realized_pnl_pct,
             "exit_reason": exit_reason,
         })
         send_webhook(config.discord_webhook_url, build_position_closed_embed({
             "ticker": pick["ticker"],
             "entry_price": pick["entry_price"],
             "exit_price": order["filled_avg_price"],
-            "realized_pnl_pct": position["unrealized_plpc"],
+            "realized_pnl_pct": realized_pnl_pct,
             "exit_reason": exit_reason,
             "days_held": days_held,
         }))

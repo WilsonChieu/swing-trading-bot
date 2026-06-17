@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 from unittest.mock import MagicMock, patch
+import pytest
 import monitor_positions
 
 
@@ -72,3 +73,40 @@ def test_run_holds_position_when_no_exit_condition_met(mock_send_webhook):
     alpaca.submit_market_sell.assert_not_called()
     db.close_position.assert_not_called()
     mock_send_webhook.assert_not_called()
+
+
+@patch("monitor_positions.send_webhook")
+def test_run_records_realized_pnl_from_actual_fill_not_unrealized_snapshot(mock_send_webhook):
+    config = make_config()
+    entry_date = (date.today() - timedelta(days=5)).isoformat()
+
+    # unrealized_plpc (0.1667) deliberately differs from the actual fill-based
+    # realized P&L: (174.0 - 150.0) / 150.0 == 0.16
+    alpaca = MagicMock()
+    alpaca.get_open_positions.return_value = [
+        {"ticker": "AAPL", "qty": 10.0, "avg_entry_price": 150.0, "current_price": 175.0, "unrealized_plpc": 0.1667},
+    ]
+    alpaca.submit_market_sell.return_value = {
+        "order_id": "1", "ticker": "AAPL", "filled_qty": 10.0,
+        "filled_avg_price": 174.0, "status": "filled",
+    }
+
+    db = MagicMock()
+    db.get_active_picks.return_value = [
+        {"id": 1, "ticker": "AAPL", "entry_date": entry_date, "entry_price": 150.0, "qty": 10.0, "reasoning": "test"},
+    ]
+
+    monitor_positions.run(config=config, alpaca=alpaca, db=db)
+
+    db.close_position.assert_called_once()
+    close_args = db.close_position.call_args.args
+    recorded = close_args[1]
+    assert recorded["realized_pnl_pct"] == pytest.approx(0.16)
+    assert recorded["realized_pnl_pct"] != pytest.approx(0.1667)
+    assert recorded["exit_price"] == 174.0
+
+    embed_call = mock_send_webhook.call_args
+    embed = embed_call.args[1]
+    field_value = embed["fields"][0]["value"]
+    assert "16.0%" in field_value
+    assert "16.7%" not in field_value
