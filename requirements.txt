@@ -1,0 +1,6 @@
+yfinance
+pandas
+alpaca-py
+supabase
+requests
+pytest
