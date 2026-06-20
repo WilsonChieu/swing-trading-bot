@@ -100,6 +100,8 @@ def run(config=None, alpaca=None, db=None, tickers=None):
 
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
     try:
         run()
     except Exception as exc:
