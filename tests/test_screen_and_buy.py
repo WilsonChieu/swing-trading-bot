@@ -12,6 +12,20 @@ def make_config():
 
 
 @patch("screen_and_buy.send_webhook")
+def test_run_skips_entirely_when_market_is_closed(mock_send_webhook):
+    config = make_config()
+    alpaca = MagicMock()
+    alpaca.is_market_open.return_value = False
+    db = MagicMock()
+
+    screen_and_buy.run(config=config, alpaca=alpaca, db=db, tickers=["AAPL"])
+
+    db.get_active_picks.assert_not_called()
+    alpaca.submit_market_buy.assert_not_called()
+    mock_send_webhook.assert_called_once()
+
+
+@patch("screen_and_buy.send_webhook")
 @patch("screen_and_buy.get_fundamentals")
 @patch("screen_and_buy.get_price_history")
 @patch("screen_and_buy.score_ticker")

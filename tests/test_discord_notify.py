@@ -5,6 +5,7 @@ from swingbot.discord_notify import (
     build_position_closed_embed,
     build_summary_embed,
     build_error_embed,
+    build_market_closed_embed,
 )
 
 
@@ -57,3 +58,9 @@ def test_build_error_embed_includes_job_name_and_message():
     assert embed["title"] == "SwingBot Error"
     assert embed["fields"][0]["name"] == "screen_and_buy"
     assert "yfinance timeout" in embed["fields"][0]["value"]
+
+
+def test_build_market_closed_embed_has_status_notice():
+    embed = build_market_closed_embed()
+    assert embed["title"] == "Market Closed"
+    assert "skipping" in embed["fields"][0]["value"].lower()

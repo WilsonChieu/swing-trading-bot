@@ -12,6 +12,9 @@ class AlpacaClient:
         account = self._client.get_account()
         return float(account.cash)
 
+    def is_market_open(self) -> bool:
+        return bool(self._client.get_clock().is_open)
+
     def get_open_positions(self) -> list:
         positions = self._client.get_all_positions()
         return [

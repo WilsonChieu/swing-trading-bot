@@ -51,3 +51,10 @@ def build_summary_embed(summary: dict) -> dict:
 
 def build_error_embed(job_name: str, error_message: str) -> dict:
     return {"title": "SwingBot Error", "fields": [{"name": job_name, "value": error_message}]}
+
+
+def build_market_closed_embed() -> dict:
+    return {
+        "title": "Market Closed",
+        "fields": [{"name": "Status", "value": "Market is closed; skipping this screen-and-buy run."}],
+    }

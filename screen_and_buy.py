@@ -6,7 +6,9 @@ from swingbot.data import get_price_history, get_fundamentals
 from swingbot.screener import score_ticker, rank_candidates
 from swingbot.alpaca_client import AlpacaClient
 from swingbot.db import Database
-from swingbot.discord_notify import send_webhook, build_picks_embed, build_summary_embed, build_error_embed
+from swingbot.discord_notify import (
+    send_webhook, build_picks_embed, build_summary_embed, build_error_embed, build_market_closed_embed,
+)
 
 MAX_OPEN_POSITIONS = 6
 PICKS_PER_WEEK = 3
@@ -31,6 +33,11 @@ def _fetch_and_score(ticker, max_attempts=2, delay_seconds=1.0):
 def run(config=None, alpaca=None, db=None, tickers=None):
     config = config or load_config()
     alpaca = alpaca or AlpacaClient(config.alpaca_api_key, config.alpaca_secret_key)
+
+    if not alpaca.is_market_open():
+        send_webhook(config.discord_webhook_url, build_market_closed_embed())
+        return
+
     db = db or Database(config.supabase_url, config.supabase_service_key)
     tickers = tickers if tickers is not None else load_tickers()
 

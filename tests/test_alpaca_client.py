@@ -14,6 +14,26 @@ def test_get_available_cash_returns_account_cash(mock_trading_client_cls):
 
 
 @patch("swingbot.alpaca_client.TradingClient")
+def test_is_market_open_returns_true_when_clock_says_open(mock_trading_client_cls):
+    mock_client = MagicMock()
+    mock_client.get_clock.return_value = MagicMock(is_open=True)
+    mock_trading_client_cls.return_value = mock_client
+
+    client = AlpacaClient("key", "secret")
+    assert client.is_market_open() is True
+
+
+@patch("swingbot.alpaca_client.TradingClient")
+def test_is_market_open_returns_false_when_clock_says_closed(mock_trading_client_cls):
+    mock_client = MagicMock()
+    mock_client.get_clock.return_value = MagicMock(is_open=False)
+    mock_trading_client_cls.return_value = mock_client
+
+    client = AlpacaClient("key", "secret")
+    assert client.is_market_open() is False
+
+
+@patch("swingbot.alpaca_client.TradingClient")
 def test_get_open_positions_returns_list_of_dicts(mock_trading_client_cls):
     mock_position = MagicMock(
         symbol="AAPL", qty="10", avg_entry_price="150.0",
